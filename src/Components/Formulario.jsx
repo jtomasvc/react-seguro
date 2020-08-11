@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
+import {ObtenerDiferencia,calcularMarca,costoPlan} from '../../src/Helper';
 
 const Campo = styled.div`
     display: flex;
@@ -41,13 +42,24 @@ const Boton = styled.button`
     }
 `;
 
-const Formulario = () => {
+const Error = styled.div `
+    background-color:red;
+    color:white;
+    padding: 1rem;
+    width:100%;
+    text-align:center;
+    margin-bottom:2rem;
+`;
+
+const Formulario = ({guardarResumen}) => {
     
     const [datos, guardarDatos] = useState ({
         marca: '',
         year: '',
         plan: ''
     });
+
+    const [error,guardarError] = useState(false);
 
     //Extraer los valores del formularo
     const {marca,year,plan} = datos
@@ -59,8 +71,52 @@ const Formulario = () => {
             [e.target.name] : e.target.value
         })
     }
+
+    //Cuando el usuario presiona submit
+    const cotizarSeguro = e => {
+        e.preventDefault();
+
+        if(marca.trim()=== ''|| year.trim()===''
+        ||plan.trim()=== ''){
+            guardarError(true);
+            return;
+        }
+
+        guardarError(false);
+
+        //una base de 2000
+        let resultado  = 2000;
+
+        //Obtener la diferencia de años
+        const diferencia = ObtenerDiferencia(year);
+
+        //por cada año se resta el 3% del valor
+        resultado -= ((diferencia * 3) * resultado) / 100;
+        console.log(resultado);
+
+        // americano 15%,asiatico5%,europeo30%
+        resultado = calcularMarca(marca) * resultado;
+        console.log(resultado);
+
+        //basico aumenta 20%
+        //completo 50%
+        const incrementoplan = costoPlan(plan);
+        resultado = parseFloat(incrementoplan * resultado).toFixed(2);
+
+        console.log(resultado);
+
+        //total
+        guardarResumen({
+            cotizacion: resultado,
+            datos
+        });
+    }
+
     return ( 
-        <form>
+        <form
+            onSubmit={cotizarSeguro}    
+        >
+            {error ? <Error>Todos los campos son obligatorios</Error> : null}
             <Campo>
                 <Label>Marca</Label>
                 <Select
@@ -116,7 +172,7 @@ const Formulario = () => {
                 /> Completo
             </Campo>
 
-            <Boton type="button">Cotizar</Boton>
+            <Boton type="submit">Cotizar</Boton>
         </form>
      );
 }
